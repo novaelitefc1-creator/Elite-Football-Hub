@@ -14,6 +14,7 @@ import schedulesRouter from "./schedules";
 import contactRouter from "./contact";
 import scoutingRouter from "./scouting";
 import dashboardRouter from "./dashboard";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use("/schedules", schedulesRouter);
 router.use("/contact", contactRouter);
 router.use("/scouting", scoutingRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/notifications", notificationsRouter);
 
 export default router;

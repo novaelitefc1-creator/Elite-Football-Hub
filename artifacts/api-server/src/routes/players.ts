@@ -3,6 +3,7 @@ import { db, playersTable, usersTable, teamsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { getUserIdFromToken } from "./auth";
+import { notifyPlayerApproved, notifyPlayerRejected } from "../lib/email";
 
 const router = Router();
 
@@ -30,7 +31,6 @@ router.get("/me", async (req, res) => {
 
 router.get("/", async (req, res) => {
   const { team, status } = req.query as { team?: string; status?: string };
-  let query = db.select().from(playersTable);
   const conditions = [];
   if (status) conditions.push(eq(playersTable.status, status));
   const players = conditions.length
@@ -77,9 +77,28 @@ router.get("/:id", async (req, res) => {
 router.patch("/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+  const prevPlayer = await db.select().from(playersTable).where(eq(playersTable.id, id)).limit(1);
+  const previousStatus = prevPlayer[0]?.status;
+
   const [player] = await db.update(playersTable).set(req.body).where(eq(playersTable.id, id)).returning();
   if (!player) return res.status(404).json({ error: "Player not found" });
-  res.json(await enrichPlayer(player));
+
+  const enriched = await enrichPlayer(player);
+  const newStatus = player.status;
+
+  if (previousStatus !== newStatus && enriched.user) {
+    const playerName = `${enriched.user.firstName} ${enriched.user.lastName}`;
+    const playerEmail = enriched.user.email;
+
+    if (newStatus === "active") {
+      notifyPlayerApproved({ playerEmail, playerName, playerId: id }).catch(() => {});
+    } else if (newStatus === "rejected") {
+      notifyPlayerRejected({ playerEmail, playerName, playerId: id }).catch(() => {});
+    }
+  }
+
+  res.json(enriched);
 });
 
 router.delete("/:id", async (req, res) => {

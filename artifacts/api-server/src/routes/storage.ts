@@ -6,16 +6,20 @@ import {
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
+import { notifyAdminDocumentSubmitted } from "../lib/email";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
+
+const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL ?? process.env.EMAIL_USER;
 
 /**
  * POST /storage/uploads/request-url
  *
  * Request a presigned URL for file upload.
- * The client sends JSON metadata (name, size, contentType) — NOT the file.
+ * The client sends JSON metadata (name, size, contentType, playerName, playerId, documentType) — NOT the file.
  * Then uploads the file directly to the returned presigned URL.
+ * If playerName / playerId / documentType are provided the admin is notified by email.
  */
 router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
   const parsed = RequestUploadUrlBody.safeParse(req.body);
@@ -37,6 +41,21 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
         metadata: { name, size, contentType },
       }),
     );
+
+    // Fire-and-forget admin notification if doc metadata is provided
+    const { playerName, playerId, documentType } = (req.body ?? {}) as {
+      playerName?: string;
+      playerId?: number;
+      documentType?: string;
+    };
+    if (ADMIN_NOTIFY_EMAIL && playerName && playerId && documentType) {
+      notifyAdminDocumentSubmitted({
+        adminEmail: ADMIN_NOTIFY_EMAIL,
+        playerName,
+        playerId: Number(playerId),
+        documentType,
+      }).catch(() => {});
+    }
   } catch (error) {
     req.log.error({ err: error }, "Error generating upload URL");
     res.status(500).json({ error: "Failed to generate upload URL" });
@@ -81,8 +100,6 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
  * GET /storage/objects/*
  *
  * Serve object entities from PRIVATE_OBJECT_DIR.
- * These are served from a separate path from /public-objects and can optionally
- * be protected with authentication or ACL checks based on the use case.
  */
 router.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
@@ -90,21 +107,6 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
-
-    // --- Protected route example (uncomment when using replit-auth) ---
-    // if (!req.isAuthenticated()) {
-    //   res.status(401).json({ error: "Unauthorized" });
-    //   return;
-    // }
-    // const canAccess = await objectStorageService.canAccessObjectEntity({
-    //   userId: req.user.id,
-    //   objectFile,
-    //   requestedPermission: ObjectPermission.READ,
-    // });
-    // if (!canAccess) {
-    //   res.status(403).json({ error: "Forbidden" });
-    //   return;
-    // }
 
     const response = await objectStorageService.downloadObject(objectFile);
 

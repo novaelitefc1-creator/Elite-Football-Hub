@@ -22,6 +22,7 @@ import AdminTrials from "@/pages/AdminTrials";
 import AdminNews from "@/pages/AdminNews";
 import AdminScouting from "@/pages/AdminScouting";
 import AdminDocuments from "@/pages/AdminDocuments";
+import AdminNotifications from "@/pages/AdminNotifications";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/admin/news" component={AdminNews} />
       <Route path="/admin/scouting" component={AdminScouting} />
       <Route path="/admin/documents" component={AdminDocuments} />
+      <Route path="/admin/notifications" component={AdminNotifications} />
       <Route component={NotFound} />
     </Switch>
   );

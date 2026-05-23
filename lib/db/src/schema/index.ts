@@ -9,3 +9,4 @@ export * from "./sponsors";
 export * from "./schedules";
 export * from "./contact";
 export * from "./scouting";
+export * from "./notifications";

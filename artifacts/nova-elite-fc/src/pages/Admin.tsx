@@ -1,13 +1,32 @@
 import { AppLayout } from "@/components/AppLayout";
 import { Link, useLocation } from "wouter";
 import { useGetDashboardSummary, useLogout, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
-import { Users, Calendar as CalendarIcon, FileText, MessageSquare, LogOut, ArrowRight, ShieldCheck } from "lucide-react";
+import { Users, Calendar as CalendarIcon, FileText, MessageSquare, LogOut, ArrowRight, ShieldCheck, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { getApiUrl } from "@/lib/api";
+
+function useUnreadCount() {
+  const token = localStorage.getItem("auth_token");
+  return useQuery({
+    queryKey: ["notifications-unread-count"],
+    queryFn: async () => {
+      const res = await fetch(`${getApiUrl()}/notifications/unread-count`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      return res.json() as Promise<{ count: number }>;
+    },
+    refetchInterval: 30000,
+    enabled: !!token,
+  });
+}
 
 export default function Admin() {
   const [, setLocation] = useLocation();
   const logout = useLogout();
+  const { data: unreadData } = useUnreadCount();
+  const unreadCount = unreadData?.count ?? 0;
   
   const { data: summary, isLoading, error } = useGetDashboardSummary({
     query: { retry: false }
@@ -44,6 +63,7 @@ export default function Admin() {
     { href: "/admin/news", label: "News & Content", icon: FileText },
     { href: "/admin/scouting", label: "Scouting Reports", icon: FileText },
     { href: "/admin/documents", label: "Document Review", icon: ShieldCheck, highlight: true },
+    { href: "/admin/notifications", label: "Notifications", icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
   ];
 
   return (
@@ -94,9 +114,19 @@ export default function Admin() {
                           <link.icon className="w-5 h-5" />
                         </div>
                         <div>
-                          <span className={`font-bold uppercase tracking-wider group-hover:text-primary transition-colors ${link.highlight ? "text-primary" : "text-white"}`}>{link.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold uppercase tracking-wider group-hover:text-primary transition-colors ${link.highlight ? "text-primary" : "text-white"}`}>{link.label}</span>
+                            {"badge" in link && link.badge !== undefined && (
+                              <span className="bg-primary text-black text-xs font-black px-2 py-0.5 rounded-full leading-none">
+                                {link.badge}
+                              </span>
+                            )}
+                          </div>
                           {link.highlight && (
                             <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Review &amp; approve player IDs</p>
+                          )}
+                          {"badge" in link && link.badge !== undefined && (
+                            <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Unread notifications</p>
                           )}
                         </div>
                       </div>
