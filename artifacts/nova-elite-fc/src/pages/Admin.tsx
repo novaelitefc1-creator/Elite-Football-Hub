@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/AppLayout";
 import { Link, useLocation } from "wouter";
 import { useGetDashboardSummary, useLogout, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
-import { Users, Calendar as CalendarIcon, FileText, MessageSquare, LogOut, ArrowRight } from "lucide-react";
+import { Users, Calendar as CalendarIcon, FileText, MessageSquare, LogOut, ArrowRight, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -43,6 +43,7 @@ export default function Admin() {
     { href: "/admin/trials", label: "Trial Management", icon: CalendarIcon },
     { href: "/admin/news", label: "News & Content", icon: FileText },
     { href: "/admin/scouting", label: "Scouting Reports", icon: FileText },
+    { href: "/admin/documents", label: "Document Review", icon: ShieldCheck, highlight: true },
   ];
 
   return (
@@ -87,12 +88,17 @@ export default function Admin() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {adminLinks.map((link) => (
                   <Link key={link.href} href={link.href}>
-                    <div className="group bg-card border border-white/10 p-6 cursor-pointer hover:border-primary transition-colors flex items-center justify-between">
+                    <div className={`group bg-card border p-6 cursor-pointer hover:border-primary transition-colors flex items-center justify-between ${link.highlight ? "border-primary/30 bg-primary/5" : "border-white/10"}`}>
                       <div className="flex items-center">
-                        <div className="bg-secondary p-3 mr-4 text-white group-hover:text-primary transition-colors border border-white/5">
+                        <div className={`p-3 mr-4 transition-colors border ${link.highlight ? "bg-primary/10 border-primary/20 text-primary" : "bg-secondary border-white/5 text-white group-hover:text-primary"}`}>
                           <link.icon className="w-5 h-5" />
                         </div>
-                        <span className="text-white font-bold uppercase tracking-wider group-hover:text-primary transition-colors">{link.label}</span>
+                        <div>
+                          <span className={`font-bold uppercase tracking-wider group-hover:text-primary transition-colors ${link.highlight ? "text-primary" : "text-white"}`}>{link.label}</span>
+                          {link.highlight && (
+                            <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Review &amp; approve player IDs</p>
+                          )}
+                        </div>
                       </div>
                       <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-1" />
                     </div>
