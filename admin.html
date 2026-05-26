@@ -1,0 +1,82 @@
+<h1>Nova Elite FC Admin Panel</h1>
+
+<h2>Player Applications</h2>
+
+<div id="applications"></div>
+
+<script type="module">
+
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "https://qgktczqpjedyvopkxjsy.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFna3RjenFwamVkeXZvcGt4anN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDczOTgsImV4cCI6MjA5NTEyMzM5OH0.jQMeptGNWswmcG3fpUhMCj8FINMQCgwuFYSESVe4hsM"
+);
+
+
+// LOAD APPLICATIONS
+async function loadApplications(){
+
+  const { data, error } = await supabase
+    .from("applications")
+    .select("*");
+
+  if(error){
+    console.log(error);
+    return;
+  }
+
+  document.getElementById("applications").innerHTML =
+    data.map(app => `
+      <div style="
+        border:1px solid white;
+        padding:15px;
+        margin:15px;
+        border-radius:10px;
+        background:#111;
+      ">
+        <h3>${app.full_name}</h3>
+
+        <p><strong>Position:</strong> ${app.position}</p>
+
+        <p><strong>Country:</strong> ${app.country}</p>
+
+        <p><strong>Status:</strong> ${app.status}</p>
+
+        <button onclick="approve('${app.id}')"
+          style="
+            padding:10px 20px;
+            background:green;
+            color:white;
+            border:none;
+            cursor:pointer;
+            border-radius:5px;
+          ">
+          Approve
+        </button>
+      </div>
+    `).join("");
+}
+
+loadApplications();
+
+
+// APPROVE PLAYER
+window.approve = async function(id){
+
+  const { error } = await supabase
+    .from("applications")
+    .update({ status:"approved" })
+    .eq("id", id);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  alert("Player Approved");
+
+  loadApplications();
+}
+
+</script>
