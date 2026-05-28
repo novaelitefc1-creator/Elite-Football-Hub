@@ -266,3 +266,4 @@ async function signObjectURL({
   const signedURL = data.signed_url;
   return signedURL;
 }
+
